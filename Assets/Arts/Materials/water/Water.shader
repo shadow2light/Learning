@@ -10,10 +10,12 @@
         _WaveSpeed1("Wave Speed", Float) = 1
         _WaveAmplitude1("Wave Amplitude", Float) = 1
         _WaveDirection1("Wave Direction", Vector) = (0, 1, 0, 0)
+        _Steep1("Steep", Range(1,5))=2.5
         _WaveLen2("Wave Length", Float) = 1
         _WaveSpeed2("Wave Speed", Float) = 1
         _WaveAmplitude2("Wave Amplitude", Float) = 1
         _WaveDirection2("Wave Direction", Vector) = (0, 1, 0, 0)
+        _Steep2("Steep", Range(1,5))=2.5
     }
     SubShader
     {
@@ -29,7 +31,7 @@
         Pass
         {
             HLSLPROGRAM
-            #pragma vertex vert
+            #pragma vertex vert_steep
             #pragma fragment frag
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
@@ -56,29 +58,45 @@
             half _WaveSpeed1;
             half _WaveAmplitude1;
             half3 _WaveDirection1;
+            half _Steep1;
             half _WaveLen2;
             half _WaveSpeed2;
             half _WaveAmplitude2;
             half3 _WaveDirection2;
+            half _Steep2;
             //sampler2D _CameraOpaqueTexture;
             SAMPLER(_CameraOpaqueTexture);
 
+            //圆润版本的波形
             half calculate_height(half len, half speed, half amp, half3 dir, half3 pos)
             {
-                // return amp * sin(dot(dir.xy, pos.xz) * 2 / len);
                 return amp * sin(dot(dir.xy, pos.xz) * 2 / len + _Time * speed * 2 / len);
             }
 
             half calculate_dx(half len, half speed, half amp, half3 dir, half3 pos)
             {
-                // return 2 / len * dir.x * amp * cos(dot(dir.xy, pos.xz) * 2 / len);
                 return 2 / len * dir.x * amp * cos(dot(dir.xy, pos.xz) * 2 / len + _Time * speed * 2 / len);
             }
 
             half calculate_dy(half len, half speed, half amp, half3 dir, half3 pos)
             {
-                // return 2 / len * dir.y * amp * cos(dot(dir.xy, pos.xz) * 2 / len);
                 return 2 / len * dir.y * amp * cos(dot(dir.xy, pos.xz) * 2 / len + _Time * speed * 2 / len);
+            }
+
+            //陡峭版本的波形
+            half calculate_height_steep(half len, half speed, half amp, half3 dir, half3 pos, half k)
+            {
+                return 2*amp*pow((sin(dot(dir.xy, pos.xz)*2/len+_Time*speed*2/len)+1)/2, k);
+            }
+
+            half calculate_dx_steep(half len, half speed, half amp, half3 dir, half3 pos, half k)
+            {
+                return k*dir.x*2/len*amp*pow((sin(dot(dir.xy, pos.xz)*2/len+_Time*speed*2/len)+1)/2, k-1)*cos(dot(dir.xy,pos.xy)*2/len+_Time*speed*2/len);
+            }
+
+            half calculate_dy_steep(half len, half speed, half amp, half3 dir, half3 pos, half k)
+            {
+                return k*dir.y*2/len*amp*pow((sin(dot(dir.xy, pos.xz)*2/len+_Time*speed*2/len)+1)/2, k-1)*cos(dot(dir.xy,pos.xy)*2/len+_Time*speed*2/len);
             }
 
             v2f vert(appdata v)
@@ -96,6 +114,32 @@
                     calculate_dy(_WaveLen2, _WaveSpeed2, _WaveAmplitude2, _WaveDirection2, positionWS);
                 half3 tangent = half3(0, 1, dy);
                 half3 normalWS = normalize(half3(-binormal.z, 1, -tangent.z));
+
+                v2f o;
+                o.vertex = TransformWorldToHClip(positionWS);
+                o.normalWS = normalWS;
+                half2 posSS=ComputeScreenPos(o.vertex/o.vertex.w).xy;
+                o.posSS = posSS; // _ScreenParams.xy
+                o.posWS = half4(positionWS, 1);
+
+                return o;
+            }
+
+            v2f vert_steep(appdata v)
+            {
+                //计算顶点高度
+                half3 positionWS = TransformObjectToWorld(v.vertex.xyz);
+                positionWS.y += calculate_height_steep(_WaveLen1, _WaveSpeed1, _WaveAmplitude1, _WaveDirection1, positionWS, _Steep1)+
+                    calculate_height_steep(_WaveLen2, _WaveSpeed2, _WaveAmplitude2, _WaveDirection2, positionWS, _Steep2);
+
+                //计算法线
+                half dx = calculate_dx_steep(_WaveLen1, _WaveSpeed1, _WaveAmplitude1, _WaveDirection1, positionWS, _Steep1)+
+                    calculate_dx_steep(_WaveLen2, _WaveSpeed2, _WaveAmplitude2, _WaveDirection2, positionWS, _Steep2);
+                half3 binormal = half3(1, 0, dx);
+                half dy = calculate_dy_steep(_WaveLen1, _WaveSpeed1, _WaveAmplitude1, _WaveDirection1, positionWS, _Steep1)+
+                    calculate_dy_steep(_WaveLen2, _WaveSpeed2, _WaveAmplitude2, _WaveDirection2, positionWS, _Steep2);
+                half3 tangent = half3(0, 1, dy);
+                half3 normalWS = normalize(cross(binormal, tangent));
 
                 v2f o;
                 o.vertex = TransformWorldToHClip(positionWS);
