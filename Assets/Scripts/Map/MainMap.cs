@@ -1,16 +1,19 @@
-﻿using Common.LifeCircle;
-using Plugins.Tinject;
+﻿using Tinject;
 using UnityEngine;
 
 namespace Map
 {
-    public class MainMap : Main
+    public class MainMap : MonoBehaviour
     {
-        [Inject(ID = 2)] private TileCalculator tileCalculator;
+        [Inject(ID = 1)] private TileCalculator tileCalculator;
 
-        protected override void Start()
+        private void Awake()
         {
-            base.Start();
+            Debug.Log(tileCalculator.TileMatrix);
+        }
+
+        private void Start()
+        {
             Debug.Log(tileCalculator.TileMatrix);
         }
     }
