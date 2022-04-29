@@ -60,6 +60,14 @@ namespace Map
                 OnTileMatrixChanged?.Invoke();
         }
 
+        public void SetTileMatrix(float v)
+        {
+            tileMatrixF = v;
+            RowCount = 2 ^ (TileMatrix - 1);
+            ColumnCount = 2 * RowCount;
+            OnTileMatrixChanged?.Invoke();
+        }
+
         public bool IsOverBoundary(int row, int column)
         {
             return row >= RowCount || column >= ColumnCount;

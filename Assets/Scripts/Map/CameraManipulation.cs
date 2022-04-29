@@ -11,12 +11,12 @@ namespace Map
         private Camera _camera;
         private Vector3 _offset;
 
-        [Inject] private Transform cameraTransform;
+        [Inject(BindingID.CameraTransform)] private Transform cameraTransform;
         [Inject] private InputDrag inputDrag;
         [Inject] private InputBeginEndDrag inputBeginEndDrag;
         [Inject] private TileCalculator tileCalculator;
         [Inject] private TextureDownloader textureDownloader;
-        
+
         public void Start()
         {
             _camera = cameraTransform.GetComponent<Camera>();
@@ -41,13 +41,15 @@ namespace Map
 
         private void OnDragged(Vector2 dir)
         {
-            if (GetTilesLocation(out var rf, out var cf, out var rt, out var ct))
-            {
-                textureDownloader.Download(rf, cf, rt, ct);
-            }
+            TryDownload();
         }
 
         private void OnTileMatrixChanged()
+        {
+            TryDownload();
+        }
+
+        private void TryDownload()
         {
             if (GetTilesLocation(out var rf, out var cf, out var rt, out var ct))
             {
@@ -61,28 +63,35 @@ namespace Map
         /// <returns></returns>
         private bool GetTilesLocation(out int rowFrom, out int columnFrom, out int rowTo, out int columnTo)
         {
-            if (GetIntersection(out var point))
-            {
-                var rowCount = tileCalculator.RowCount;
-                var columnCount = tileCalculator.ColumnCount;
-                var mapWidth = TileManager.SideLength * columnCount;
-                var mapHeight = TileManager.SideLength * rowCount;
-                var row = (int) (rowCount * (point.y + mapHeight / 2) / mapHeight);
-                var column = (int) (columnCount * (point.x + mapWidth / 2) / mapWidth);
-                var screenRowCount = Mathf.CeilToInt(Screen.width / TileManager.SideLength);
-                var screenColumnCount = Mathf.CeilToInt(Screen.height / TileManager.SideLength);
-                rowFrom = row - screenRowCount / 2;
-                rowTo = row + screenRowCount / 2;
-                columnFrom = column - screenColumnCount / 2;
-                columnTo = column + screenColumnCount / 2;
-                return true;
-            }
+            var point = GetMapPoint();
+            // if (GetIntersection(out var point))
+            // {
+            var rowCount = tileCalculator.RowCount;
+            var columnCount = tileCalculator.ColumnCount;
+            var mapWidth = TileManager.SideLength * columnCount;
+            var mapHeight = TileManager.SideLength * rowCount;
+            var row = (int) (rowCount * (point.z+ mapHeight / 2) / mapHeight);
+            var column = (int) (columnCount * (point.x + mapWidth / 2) / mapWidth);
+            var screenRowCount = Mathf.CeilToInt(Screen.width / TileManager.SideLength);
+            var screenColumnCount = Mathf.CeilToInt(Screen.height / TileManager.SideLength);
+            rowFrom = row - screenRowCount / 2;
+            rowTo = row + screenRowCount / 2;
+            columnFrom = column - screenColumnCount / 2;
+            columnTo = column + screenColumnCount / 2;
+            return true;
+            // }
 
-            rowFrom = 0;
-            rowTo = 0;
-            columnFrom = 0;
-            columnTo = 0;
-            return false;
+            // rowFrom = 0;
+            // rowTo = 0;
+            // columnFrom = 0;
+            // columnTo = 0;
+            // return false;
+        }
+
+        private Vector3 GetMapPoint()
+        {
+            var position = cameraTransform.position;
+            return new Vector3(position.x, 0, position.z);
         }
 
         private bool GetIntersection(out Vector3 intersection)

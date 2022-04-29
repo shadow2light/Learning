@@ -17,6 +17,7 @@ namespace Map
         [Inject] private TextureDownloader textureDownloader;
         [Inject] private GameObject tilePrefab;
         [Inject] private TileCalculator tileCalculator;
+        [Inject(ID = BindingID.SceneRoot)] private Transform sceneRoot;
         
         public void Start()
         {
@@ -41,6 +42,7 @@ namespace Map
                 CalculateWorldPosition(sendingTexture.Row, sendingTexture.Column, out var x, out var y);
                 var go = PoolManager.SpawnObject(tilePrefab);
                 var tileGameObject = new TileGameObject(go);
+                tileGameObject.Transform.SetParent(sceneRoot);
                 tileGameObject.Transform.position = new Vector3(x, 0, y);
                 tileGameObject.Material.mainTexture = sendingTexture.Texture;
                 _tileGameObjects.Add(tileGameObject);

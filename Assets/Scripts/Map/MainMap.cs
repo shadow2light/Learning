@@ -5,7 +5,7 @@ namespace Map
 {
     public class MainMap : MonoBehaviour
     {
-        [Inject(ID = 1)] private TileCalculator tileCalculator;
+        [Inject] private TileCalculator tileCalculator;
 
         private void Awake()
         {
