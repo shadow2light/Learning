@@ -1,0 +1,6 @@
+pandoc input.docx -o output.md --wrap=none --extract-media=./media
+
+常用参数：
+- --wrap=none：不自动折行
+- --extract-media=./media：把文档里的图片提取到 media 文件夹，md 中自动生成相对路径引用
+- -t gfm：输出 GitHub 风格 Markdown（表格等更通用）
